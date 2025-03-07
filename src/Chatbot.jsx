@@ -9,36 +9,49 @@ export default function Chatbot() {
     if (!input.trim()) return
 
     const userMessage = { sender: "user", text: input }
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
+    const updatedMessages = [...messages, userMessage] // Adds new message to history
 
-    setTimeout(() => setIsTyping(true), 1000)
+    setMessages(updatedMessages)
+    setInput("")
+    setIsTyping(true) // Activate "Typing..."
 
     try {
       const response = await fetch(
-        `https://oklamonte-api.onrender.com/api/search?query=${encodeURIComponent(
-          input
-        )}`
+        "https://oklamonte-api.onrender.com/api/search",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            history: updatedMessages.map((msg) => ({
+              role: msg.sender === "user" ? "user" : "assistant", // Change 'bot' to 'assistant'
+              text: msg.text || "", // Ensure no null or undefined message text
+            })),
+            currentMessage: input.trim() || "", // Ensure currentMessage is valid
+          }),
+        }
       )
+
       const data = await response.json()
 
       const botMessage = {
-        sender: "bot",
+        sender: "assistant", // Keep 'assistant' as sender here too
         text: data.response || "Sem resposta disponível.",
       }
 
       setTimeout(() => {
         setMessages((prev) => [...prev, botMessage])
         setIsTyping(false)
-      }, 2000)
+      }, 1000)
     } catch (error) {
       setTimeout(() => {
         setMessages((prev) => [
           ...prev,
-          { sender: "bot", text: "Erro ao buscar resposta." },
+          { sender: "assistant", text: "Erro ao buscar resposta." },
         ])
         setIsTyping(false)
-      }, 2000)
+      }, 1000)
     }
   }
 
